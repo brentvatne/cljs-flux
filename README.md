@@ -22,7 +22,7 @@ But I like it.
 
 (def stream (partial dispatcher/stream :city-store)
 (stream :country-update update-state! {:wait-for :country-store})
-(stream :clear-address-form clear-state!)"
+(stream :clear-address-form clear-state!)
 
 (ns app.sync
   (:require [app.api :as api]
