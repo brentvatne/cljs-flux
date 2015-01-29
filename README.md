@@ -58,3 +58,9 @@ Then require it where necessary:
 ;; The wildcard matcher is streamed all actions, as you would expect
 (dispatcher/stream :* (fn [data] (.log js/console data)))
 ```
+
+## Related Projects
+
+[Kyle Gann's cljs-flux](https://github.com/kgann/cljs-flux) is more
+similar to the original JavaScript implementation of `dispatcher.js`
+than this project.
