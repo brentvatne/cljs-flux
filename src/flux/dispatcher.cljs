@@ -4,39 +4,33 @@
 
 (def dispatch-chan (chan))
 (def dispatch-chan-mult (mult dispatch-chan))
-(def wildcard-key :*)
-(def dispatch-pub-wildcard (pub (tap dispatch-chan-mult (chan)) (constantly wildcard-key)))
 (def dispatch-pub (pub (tap dispatch-chan-mult (chan)) first))
-
 (defn register [tag] (sub dispatch-pub tag (chan)))
-(defn register-wildcard [] (sub dispatch-pub-wildcard wildcard-key (chan)))
 (defn unregister [tag chan] (unsub dispatch-pub tag chan))
 
 (defmulti stream* (fn [tag & args] tag))
 
+(def wildcard-key :*)
+(def dispatch-pub-wildcard (pub (tap dispatch-chan-mult (chan)) (constantly wildcard-key)))
+(defn register-wildcard [] (sub dispatch-pub-wildcard wildcard-key (chan)))
 (defmethod stream* wildcard-key [_ handler & args]
   (let [this-chan (register-wildcard)]
     (go-loop []
-      (let [data (<! this-chan)]
-        (handler data))
+      (let [[tag data] (<! this-chan)]
+        (handler [tag data]))
       (recur))))
 
 (defmethod stream* :default [tag handler options]
   (let [this-chan (register tag)
         wait-for-ids (->> [(get options :wait-for [])] (flatten) (set))]
     (go-loop []
-      (let [data (<! this-chan)
-            v (last data)
-            dispatch-id (:dispatch-id options)
-            complete-chan (:complete-chan v)
-            complete-chan-tap (tap (:complete-chan-mult v) (chan))
-            hand-off (fn [] (handler v) (put! complete-chan dispatch-id))]
-        (if (empty? wait-for-ids)
-          (hand-off)
-          (go-loop [waiting-for wait-for-ids]
-                   (if (empty? waiting-for)
-                     (hand-off)
-                     (recur (disj waiting-for (<! complete-chan-tap)))))))
+      (let [[_ data] (<! this-chan)
+            complete-chan-tap (tap (:complete-chan-mult data) (chan))]
+        (go-loop [waiting-for wait-for-ids]
+           (if (empty? waiting-for)
+             (do (handler data)
+                 (put! (:complete-chan data) (:dispatch-id options)))
+             (recur (disj waiting-for (<! complete-chan-tap))))))
       (recur))))
 
 (defn stream
@@ -86,7 +80,6 @@
   data - a map of data related to the action, can have any structure that you like,
   but cannot use the keys :complete-chan :complete-chan-mult or :dispatcher-id"
   (let [complete-chan (chan)
-        complete-chan-mult (mult complete-chan)
-        chans-map {:complete-chan complete-chan :complete-chan-mult complete-chan-mult}
-        options (merge data chans-map)]
-    (put! dispatch-chan [tag options])))
+        complete-chan-mult (mult complete-chan)]
+    (put! dispatch-chan [tag (merge data {:complete-chan complete-chan
+                                          :complete-chan-mult complete-chan-mult})])))

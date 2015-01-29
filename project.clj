@@ -1,4 +1,4 @@
-(defproject ca.brentvatne/flux "0.1.0"
+(defproject ca.brentvatne/flux "0.1.1"
   :description "A core.async-based implementation of a Flux-style dispatcher."
   :url "https://github.com/brentvatne/flux"
   :license {:name "Eclipse"
