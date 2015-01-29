@@ -48,6 +48,6 @@ Then require it where necessary:
 (ns app.logger
   (:require [flux.dispatcher :as dispatcher]))
 
-;; Log all data that flows through the dispatcher
+;; The wildcard matcher is streamed all actions, as you would expect
 (dispatcher/stream :* (fn [data] (.log js/console data)))
 ```
