@@ -3,6 +3,20 @@
 A naïve core.async-based implementation of a Flux-style dispatcher.
 But I like it.
 
+## Use it
+
+Add the following to your project dependencies:
+```clojure
+[ca.brentvatne/flux "0.1.0"]
+```
+
+Then require it where necessary:
+
+```clojure
+(ns app.core
+  (:require [flux.dispatcher :as dispatcher]))
+```
+
 ## Example
 
 ```clojure
