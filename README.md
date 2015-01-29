@@ -1,7 +1,7 @@
 # Flux in ClojureScript
 
 A naïve core.async-based implementation of a Flux-style dispatcher.
-But I like it.
+But I like it. Heavily inspired by [Justin Tulloss' blog post](https://justin.harmonize.fm/development/2014/08/05/om-and-flux.html), with additional features such as `wait-for` and wildcard matching.
 
 ## Use it
 
