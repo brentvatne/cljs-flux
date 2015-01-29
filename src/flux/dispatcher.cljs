@@ -26,6 +26,8 @@
     (go-loop []
       (let [[_ data] (<! this-chan)
             complete-chan-tap (tap (:complete-chan-mult data) (chan))]
+        ;; TODO: Potential for deadlock here if the id we are waiting for
+        ;; never says it's complete, should account for this
         (go-loop [waiting-for wait-for-ids]
            (if (empty? waiting-for)
              (do (handler data)
