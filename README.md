@@ -20,6 +20,13 @@ Then require it where necessary:
 ## Example
 
 ```clojure
+(ns app.core
+  (:require [flux.dispatcher :refer [dispatch!]))
+
+;; You would probably use this as a response to user input,
+;; but for simplicity let's dispatch an action right away
+(dispatch! :country-update {:country "Canada"})
+
 (ns app.country-store
   (:require [flux.dispatcher :as dispatcher]))
 
