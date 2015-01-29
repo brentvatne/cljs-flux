@@ -5,7 +5,7 @@ But I like it.
 
 ## Example
 
-```clojurescript
+```clojure
 (ns app.country-store
   (:require [flux.dispatcher :as dispatcher]))
 
