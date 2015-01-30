@@ -57,10 +57,9 @@ Then require it where necessary:
   (fn [[x y]] (.log js/console (str "valid mouse location x: " x ", y: " y)))
   {:wait-for :other-process})
 
-;; Waits for the handler to finish executing any go blocks, so async
-;; calls can be performed
+;; Can pass in a done! function to allow for longer async operations
+;; to finish processing before indicating completion
 (def store (atom {}))
-
 (stream :sync :add-user
   (fn [{:keys [id done!]}]
     (go (swap! store assoc :id (<! (http/post "/users/")))
