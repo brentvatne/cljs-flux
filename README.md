@@ -45,6 +45,9 @@ Then require it where necessary:
 (dispatcher/stream :* (fn [data] (.log js/console data)))
 
 ;; Apply transducers to the streams
+;; * Not yet working like this, this is the target API
+;; * Currently looks more like:
+;; *   pos->vec (fn [[tag {:keys [x y] :as m}]] [tag (assoc m :v [x y])])
 (defn mouse-loc->vec [e] [(.-clientX e) (.-clientY e)])
 (def max-height 900)
 (def min-height 100)
