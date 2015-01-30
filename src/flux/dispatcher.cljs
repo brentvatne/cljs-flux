@@ -5,7 +5,10 @@
 (def dispatch-chan (chan))
 (def dispatch-chan-mult (mult dispatch-chan))
 (def dispatch-pub (pub (tap dispatch-chan-mult (chan)) first))
-(defn register [tag] (sub dispatch-pub tag (chan)))
+(defn register
+  ([tag] (sub dispatch-pub tag (chan)))
+  ([tag transducer] (sub dispatch-pub tag (chan 1 transducer))))
+
 (defn unregister [tag chan] (unsub dispatch-pub tag chan))
 
 (defmulti stream* (fn [tag & args] tag))
@@ -21,17 +24,20 @@
       (recur))))
 
 (defmethod stream* :default [tag handler options]
-  (let [this-chan (register tag)
+  (let [transducer (get options :transducer (map identity))
+        this-chan (register tag transducer)
+        complete-by-callback? (get options :async false)
         wait-for-ids (->> [(get options :wait-for [])] (flatten) (set))]
     (go-loop []
-      (let [[_ data] (<! this-chan)
-            complete-chan-tap (tap (:complete-chan-mult data) (chan))]
-        ;; TODO: Potential for deadlock here if the id we are waiting for
-        ;; never says it's complete, should account for this
+      (let [[_ {:keys [complete-chan-mult complete-chan] :as data}] (<! this-chan)
+            done! (fn [] (put! complete-chan (:dispatch-id options)))
+            complete-chan-tap (tap complete-chan-mult (chan 10))]
+
         (go-loop [waiting-for wait-for-ids]
            (if (empty? waiting-for)
-             (do (handler data)
-                 (put! (:complete-chan data) (:dispatch-id options)))
+             (do (handler (merge data {:done! done!}))
+                 (when-not complete-by-callback?
+                   (done!)))
              (recur (disj waiting-for (<! complete-chan-tap))))))
       (recur))))
 
@@ -70,8 +76,16 @@
    (stream* tag handler {}))
   ([id tag handler]
    (stream id tag handler {}))
-  ([id tag handler options]
-    (stream* tag handler (merge {:dispatch-id id} options))))
+  ([id tag transducer-or-handler handler-or-options]
+   (if (fn? handler-or-options)
+     (let [transducer transducer-or-handler
+           handler handler-or-options]
+        (stream* tag handler (merge {:dispatch-id id :transducer transducer} {:dispatch-id id})))
+     (let [handler transducer-or-handler
+           options handler-or-options]
+        (stream* tag handler (merge {:dispatch-id id} options)))))
+  ([id tag transducer handler options]
+    (stream* tag handler (merge {:dispatch-id id :transducer transducer} options))))
 
 (defn dispatch! [tag data]
   "Puts the given data on the dispatch channel to published to all those consumers

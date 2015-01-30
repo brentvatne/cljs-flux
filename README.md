@@ -20,43 +20,56 @@ Then require it where necessary:
 ## Example
 
 ```clojure
-(ns app.core
-  (:require [flux.dispatcher :refer [dispatch!]))
-
 ;; You would probably use this as a response to user input,
 ;; but for simplicity let's dispatch an action right away
 (dispatch! :country-update {:country "Canada"})
 
-(ns app.country-store
-  (:require [flux.dispatcher :as dispatcher]))
-
+;; Partial application saves us specifying the id each time
 (def stream (partial dispatcher/stream :country-store)
+
+;; Subscribes handlers (last argument) to the given tags
 (stream :select-continent update-available-options!)
 (stream :country-update update-state!)
 (stream :clear-address-form clear-state!)
 
-(ns app.city-store
-  (:require [flux.dispatcher :as dispatcher]))
-
-(defn update-state! [attrs] .... )
-(defn clear-state! [attrs] .... )
-
+;; Declaratively express order depdendencies
 (def stream (partial dispatcher/stream :city-store)
-(stream :country-update update-state! {:wait-for :country-store})
-(stream :clear-address-form clear-state!)
+(stream :country-update filter-by-country! {:wait-for :country-store})
+(stream :clear-address-form clear-state! {:wait-for [:some-thing :other-thing]})
 
-(ns app.sync
-  (:require [app.api :as api]
-            [flux.dispatcher :as dispatcher]))
-
+;; Decouple backend synchronization logic
 (def stream (partial dispatcher/stream :sync))
 (stream :submit-form api/save-state {:wait-for :validator})
 
-(ns app.logger
-  (:require [flux.dispatcher :as dispatcher]))
-
 ;; The wildcard matcher is streamed all actions, as you would expect
 (dispatcher/stream :* (fn [data] (.log js/console data)))
+
+;; Apply transducers to the streams
+(defn mouse-loc->vec [e] [(.-clientX e) (.-clientY e)])
+(def max-height 900)
+(def min-height 100)
+(dispatcher/stream :mouse-move
+  (comp (map mouse-loc->vec)
+        (filter [_ y] (or (> y max-height) (< y min-height))))
+  (fn [[x y]] (.log js/console (str "valid mouse location x: " x ", y: " y)))
+  {:wait-for :other-process})
+
+;; Waits for the handler to finish executing any go blocks, so async
+;; calls can be performed
+(def store (atom {}))
+
+(stream :sync :add-user
+  (fn [{:keys [id done!]}]
+    (go (swap! store assoc :id (<! (http/post "/users/")))
+        (done!)))
+  {:async true})
+
+;; Show the alert once the user id has been persisted
+(stream :alerts :add-user
+  (fn [] (js/alert (str "Added user with id: " (:id @store))))
+  {:wait-for :sync})
+
+(dispatch! :add-user {:id 1}))))
 ```
 
 ## Related Projects

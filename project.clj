@@ -15,11 +15,14 @@
   :plugins [[com.cemerick/clojurescript.test "0.3.3"]
             [lein-cljsbuild "1.0.4"]]
 
+  :aliases {"auto-test" ["do" "clean," "cljsbuild" "auto" "test"]}
+
   :profiles {:dev {:source-paths ["dev"]
                    :plugins [[com.cemerick/austin "0.1.6"]]}}
 
   :cljsbuild {:test-commands {"unit-tests" ["phantomjs" :runner "target/testable.js"]}
               :builds {:test {:source-paths ["src" "test"]
+                              :notify-command ["phantomjs" :cljs.test/runner "target/testable.js"]
                               :compiler {:output-to "target/testable.js"
                                          :optimizations :whitespace}}
                        :dev {:source-paths ["src"]
