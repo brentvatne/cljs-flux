@@ -37,7 +37,7 @@
                                     (done!))) {:async true})
       (stream :alerts :add-user
         (fn [] (is (= ({:id 1} @store)))
-              (> (- start-time (.now js/Date)) 1000)
+              (is (> (- (.now js/Date) start-time) 1000))
               (done))
         {:wait-for :sync})
       (dispatch! :add-user {:id 1}))))
