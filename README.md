@@ -7,7 +7,7 @@ But I like it. Heavily inspired by [Justin Tulloss' blog post](https://justin.ha
 
 Add the following to your project dependencies:
 ```clojure
-[ca.brentvatne/flux "0.1.1"]
+[ca.brentvatne/flux "0.1.2"]
 ```
 
 Then require it where necessary:
